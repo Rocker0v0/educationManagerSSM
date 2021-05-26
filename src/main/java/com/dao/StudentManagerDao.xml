@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.StudentManagerDao">
+    <select id="getStudentInfo" resultType="com.vo.studentInfoManager.StudentInfoMangerVo">
+        select studentId,studentName,studentSex,studentBirth,nationality,dept.DEPT_NAME
+        deptName,className,majorName,year from DEPT,(select students.STUDENT_ID studentId,students.SNAME
+        studentName,students.SSEX studentSex,to_char(students.SBIRTH,'yyyy/MM/dd') studentBirth,students.NATIONALITY nationality,
+        dept.DEPT_NAME majorName, class.CLASS_NAME className, class.year year,class.MAJOR_ID majorId
+        from students,class,DEPT
+        where students.CLASS_ID = class.CLASS_ID and class.MAJOR_ID = dept.DEPT_ID) where DEPT.DEPT_ID = (select
+        PARENT_ID from dept where dept.DEPT_ID = majorId)
+
+        <if test="studentName!=null and studentName!=''">
+            and studentName = #{studentName}
+        </if>
+        <if test="year!=null and year!=''">
+            and year = #{year}
+        </if>
+        <if test="className!=null and className!=''">
+            and className = #{className}
+        </if>
+        <if test="studentId!=null and studentId!=''">
+            and studentId = #{studentId}
+        </if>
+    </select>
+
+    <select id="getClassId" resultType="java.lang.String">
+        select CLASS_ID from class where CLASS.year = #{year} and class.CLASS_NAME = #{className}
+    </select>
+
+
+    <insert id="addStudentInfo">
+        insert into students(STUDENTS.STUDENT_ID,STUDENTS.SNAME,students.SSEX,students.SBIRTH,STUDENTS.NATIONALITY,students.CLASS_ID) values
+        (#{studentId},#{studentName},#{studentSex},to_date(#{studentBirth},'yyyy/MM/dd'),#{nationality},(select CLASS_ID from class where class.year=#{year} and class.class_name=#{className}))
+    </insert>
+
+    <insert id="addScByID">
+            insert into sc values(#{studentId},null,#{id},null)
+    </insert>
+
+    <select id="getScIdList" resultType="java.lang.Integer">
+        select distinct sc.ID from TC,sc,courses,class,Students where sc.id = TC.ID and Tc.COURSE_ID = courses.COURSE_ID
+    and sc.STUDENT_ID = STUDENTS.STUDENT_ID and STUDENTS.CLASS_ID = class.CLASS_ID and class.year = #{year}
+    and class.CLASS_NAME = #{className} and courses.TYPE != '通识选修'
+    </select>
+
+    <select id="getStudentIdListByName" resultType="java.lang.String">
+        select STUDENT_ID from students where SNAME = #{studentName}
+    </select>
+
+    <delete id="removeStudentByStudentId">
+        delete from students where students.student_id in
+        <foreach collection="list" item="resultItem" open="(" close=")" separator=",">
+            #{resultItem}
+        </foreach>
+    </delete>
+
+    <select id="getClassNameListByMaxNumber" resultType="java.lang.String">
+select CLASS_NAME from CLASS where MAJOR_ID = (select DEPT_ID from DEPT where DEPT_NAME = #{majorName}) and YEAR = #{year}
+and class_id not in (select classId from (select class.CLASS_ID classId,class.MAXS_TUDENT from students ,class
+where class.class_id = STUDENTS.CLASS_ID group by class.CLASS_ID,class.MAXS_TUDENT
+having count(students.STUDENT_ID)>=class.MAXS_TUDENT))
+    </select>
+
+    <select id="getStudentNameById" resultType="java.lang.String">
+        select sName from students where STUDENTS.STUDENT_ID = #{studentId}
+    </select>
+
+    <update id="updateStudentInfo">
+        update students set SNAME = #{studentName},SSEX = #{studentSex} ,SBIRTH = to_date(#{studentBirth},'yyyy/MM/dd'),NATIONALITY = #{nationality} where students.student_id = #{studentId}
+    </update>
+</mapper>

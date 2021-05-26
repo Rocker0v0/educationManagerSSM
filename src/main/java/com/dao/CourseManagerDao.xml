@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.CourseManagerDao">
+    <select id="getCourseManager" resultType="com.vo.courseManagerVo.CourseManager">
+        SELECT COURSES.CNAME courseName,
+        DEPT.DEPT_NAME deptName,
+        TEACHER.TNAME teacherName,
+        TC.SEMESTER semester,
+        TC.START_WEEK startWeek,
+        TC.END_WEEK endWeek,
+        TC.day DAY,
+        TC.id,
+        TC.CLASS_ONE classOne,
+        TC.CLASS_TWO classTwo,
+        CLASS_ROOM.CLASSROOM_NAME classRoomName,
+        TC.MAX_STUDENTS maxStudents,
+        COURSES.type,
+        TC.isnew isNewAdd
+        FROM TC,COURSES,DEPT,Teacher,CLASS_ROOM
+        WHERE TC.TEACHER_ID = TEACHER.TEACHER_ID
+        AND COURSES.dept_id = dept.dept_id
+        AND TC.CLASSROOM_ID =CLASS_ROOM.CLASSROOM_ID
+        AND TC.COURSE_ID = COURSES.COURSE_ID
+        <if test="type!=null and type!=''">
+            And COURSES.type = #{type}
+        </if>
+        <if test="TNAME!=null and TNAME!=''">
+            And TEACHER.TNAME = #{TNAME}
+        </if>
+        <if test="CNAME!=null and CNAME!=''">
+            And COURSES.CNAME = #{CNAME}
+        </if>
+        order by COURSES.CNAME desc
+    </select>
+
+    <select id="getAbleCourses" resultType="java.lang.String">
+       select cname
+        from courses
+        where courses.COURSE_ID not in
+            (select distinct Tc.course_id
+             from Tc,
+                  courses
+             where TC.course_id = courses.course_id
+               and courses.type = '通识选修')
+    </select>
+
+    <select id="getAbleTeachers" resultType="java.util.HashMap">
+        select tname from teacher where DEPT_ID=(select dept_id from dept where dept_id in (select dept_id from dept
+        start with DEPT_ID = (select DEPT_ID from courses where CNAME = #{CNAME})
+        connect by DEPT.DEPT_ID =prior DEPT.PARENT_ID) and DEPT.PARENT_ID = 000) and teacher_id not in (select
+        Teacher_id from (select TC.TEACHER_ID,count(*) item from TC ,Teacher where TC.TEACHER_ID = TEACHER.TEACHER_ID
+        <if test="semester%2 == 0 and semester!=0">
+            and TC.semester in (2,4,6)
+        </if>
+        <if test="semester%2 == 1 and semester!=0">
+            and TC.semester in (1,3,5,7)
+        </if>
+        group by TC.TEACHER_ID) where item = 5)
+    </select>
+
+    <select id="getAbleSemester" resultType="java.lang.Integer">
+        select Tc.semester from Tc ,COURSES where
+        TC.COURSE_ID = COURSES.COURSE_ID and COURSES.DEPT_ID = (select dept_id from courses where COURSES.CNAME =
+        #{CNAME})
+        group by Tc.semester
+        <if test="type == '专业必修'">
+            having count(distinct Tc.COURSE_ID) &gt;=10
+        </if>
+        <if test="type != '专业必修'">
+            having count(distinct Tc.COURSE_ID) &gt;=5
+        </if>
+    </select>
+
+    <select id="getAllReadyTc" resultType="com.daomain.TcInfo">
+        select id id, tc.start_week startWeek,tc.end_week endWeek,tc.day day,TC.CLASS_ONE classOne,TC.CLASS_TWO classTwo
+        from TC,teacher,courses where
+        (tc.TEACHER_ID = teacher.teacher_id
+        and courses.course_id = Tc.course_id
+        and teacher.tname = #{TNAME}
+        <if test="SEMESTER%2 == 0 and SEMESTER!=0">
+            and TC.semester in (2,4,6)
+        </if>
+        <if test="SEMESTER%2 == 1 and SEMESTER!=0">
+            and TC.semester in (1,3,5,7)
+        </if>
+
+        <if test="id!=null and id!=''">
+            and Tc.id != #{id}
+        </if>
+        and (
+        (TC.START_WEEK &gt;= #{start_week} and TC.START_WEEK &lt;= #{end_week})
+        or (TC.END_WEEK &gt;= #{start_week} and TC.END_WEEK &lt;= #{end_week})
+        or (TC.START_WEEK &lt;= #{start_week} and TC.END_WEEK &gt;= #{end_week})
+        ))
+        <if test="type!=null and type!='' and SEMESTER !=null and SEMESTER != '' and isNew != null and isNew != ''">
+            or
+            (
+            courses.dept_id = (select dept_id from courses where courses.CNAME = #{CNAME})
+            and TEACHER.TEACHER_ID = Tc.teacher_id
+            and Tc.isnew = #{isNew}
+            <if test="id!=null and id!=''">
+                and Tc.id != #{id}
+            </if>
+            and courses.course_id = Tc.course_id and (
+            (TC.START_WEEK &gt;= #{start_week} and TC.START_WEEK &lt;= #{end_week})
+            or (TC.END_WEEK &gt;= #{start_week} and TC.END_WEEK &lt;= #{end_week})
+            or (TC.START_WEEK &lt;= #{start_week} and TC.END_WEEK &gt;= #{end_week})
+            ) and courses.type = #{type} and TC.semester = #{SEMESTER})
+        </if>
+    </select>
+
+
+    <select id="getSemester" resultType="com.daomain.TcInfo">
+        select  semester,tc.start_week startWeek,tc.end_week endWeek,tc.day day,TC.CLASS_ONE classOne,TC.CLASS_TWO classTwo from TC,courses where COURSES.COURSE_ID = TC.COURSE_ID and COURSES.CNAME = #{CNAME}
+    </select>
+
+
+    <select id="getDay" resultType="java.lang.Integer">
+        select Tc.Day from TC,courses where Tc.course_id = courses.course_id and
+        courses.type= (select courses.type from courses where courses.cName = #{courseName})
+        and TC.semester = #{semester}
+        and courses.dept_id = (select courses.dept_id from courses where courses.cName = #{courseName})
+        and (
+        (TC.START_WEEK &gt;=  #{startWeek} and TC.START_WEEK   &lt;=  #{endWeek})
+        or (TC.END_WEEK &gt;= #{startWeek} and TC.END_WEEK  &lt;= #{endWeek})
+        or (TC.START_WEEK  &lt;=  #{startWeek} and TC.END_WEEK &gt;= #{endWeek})
+        )
+        and TC.isNew = #{isNewAdd}
+        group by Tc.Day having count(distinct Tc.course_id)>=5
+    </select>
+
+    <select id="getCourseType" resultType="java.lang.String">
+        select type from courses where courses.cname = #{CNAME}
+    </select>
+
+    <select id="getAbleRooms" resultType="java.util.HashMap">
+        select CLASSROOM_NAME from class_Room where CLASSROOM_ID not in (select TC.CLASSROOM_ID from TC where (
+        (TC.START_WEEK &gt;= #{startWeek} and TC.START_WEEK &lt;= #{endWeek})
+        or (TC.END_WEEK &gt;= #{startWeek} and TC.END_WEEK &lt;= #{endWeek})
+        or (TC.START_WEEK &lt;= #{startWeek} and TC.END_WEEK &gt;= #{endWeek})
+        ) and Tc.day = #{day}
+
+        <if test="semester%2 == 0 and semester!=0">
+            and TC.semester in (2,4,6)
+        </if>
+        <if test="semester%2 == 1 and semester!=0">
+            and TC.semester in (1,3,5,7)
+        </if>
+
+        and (TC.CLASS_ONE = #{classOne} or TC.CLASS_TWO = #{classTwo}))
+    </select>
+
+    <select id="getIndexCourse" resultType="java.lang.Integer">
+    select TC.isnew from Tc where Tc. course_id= (select course_id from courses where courses.cName = #{courseName})
+    </select>
+
+    <delete id="removeCoursesManager">
+        delete from TC where TC.id in
+        <foreach collection="list" item="resultItem" open="(" close=")" separator=",">
+            #{resultItem}
+        </foreach>
+    </delete>
+
+    <insert id="addCoursesManager">
+        insert into tc(id,course_id,TEACHER_ID,SEMESTER,START_WEEK,END_WEEK,DAY,CLASSROOM_ID,CLASS_ONE,CLASS_TWO,MAX_STUDENTS,ISNEW)
+        values(null,(select course_id from courses where cname = #{courseName}),(select teacher_id from teacher where tname = #{teacherName}),
+        #{semester},#{startWeek},#{endWeek},#{day},(select classRoom_id from CLASS_ROOM where classRoom_name = #{classRoomName}),#{classOne},#{classTwo},60,#{isNewAdd})
+    </insert>
+
+    <update id="modifyCoursesManager">
+        update tc set TEACHER_ID = (select TEACHER_ID from TEACHER where TNAME = #{teacherName}),SEMESTER = #{semester},
+        start_week = #{startWeek},end_week = #{endWeek}, day = #{day},
+            classRoom_id = (select classRoom_id from CLASS_ROOM where classRoom_name = #{classRoomName})
+            ,class_one = #{classOne},class_two = #{classTwo},max_students = #{maxStudents},isNew = #{isNewAdd}  where tc.id = #{id}
+    </update>
+
+    <select id="getIsNewNumber" resultType="java.lang.Integer">
+        select count(Tc.ISNEW)  from Tc,courses where Tc.COURSE_ID = courses.COURSE_ID and  courses.CNAME = #{courseName} group by TC.COURSE_ID
+    </select>
+
+    <select id="getClassNumberByDept" resultType="java.lang.Integer">
+    select ceil(count(CLASS_Id) / 2)
+    from CLASS
+    where class.MAJOR_ID in
+    (select dept.DEPT_ID
+    from dept
+    start with DEPT.DEPT_ID = #{deptId}
+    connect by prior DEPT_ID = PARENT_ID) and class.year = #{year}
+    </select>
+
+    <select id="getDeptId" resultType="java.lang.String">
+        select COURSES.dept_id from COURSES where courses.CNAME = #{courseName}
+    </select>
+</mapper>

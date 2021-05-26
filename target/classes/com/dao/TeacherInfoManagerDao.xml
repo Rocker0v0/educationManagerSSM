@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.TeacherInfoManagerDao">
+    <select id="getAllTeacherInfo" resultType="com.vo.teacherInfoManager.TeacherInfoManagerVo">
+        select teacher.TEACHER_ID teacherId,DEPT.DEPT_NAME deptName,teacher.TNAME teacherName,
+        teacher.TSEX teacherSex,to_char(teacher.TBIRTH,'yyyy/MM/dd') teacherBirth,teacher.EDUC educ,teacher.PROFESS
+        profess from teacher,dept where teacher.DEPT_ID = DEPT.DEPT_ID
+        <if test="teacherName!=null and teacherName!=''">
+            and teacher.TNAME = #{teacherName}
+        </if>
+        <if test="teacherId!=null and teacherId!=''">
+            and teacher.TEACHER_ID = #{teacherId}
+        </if>
+        <if test="deptName!=null and deptName!=''">
+            and DEPT.DEPT_NAME = #{deptName}
+        </if>
+        order by teacher.TEACHER_ID asc
+    </select>
+
+    <select id="getTeacherNameByTeacherId" resultType="java.lang.String">
+        select tName from teacher where TEACHER_ID=  #{teacherId}
+    </select>
+
+    <insert id="addTeacherManagerInfo">
+        insert into teacher values (#{teacherId},(select dept_id from dept where dept_name  = #{deptName}),#{teacherName},
+        #{teacherSex},to_date(#{teacherBirth},'yyyy/MM/dd'),#{educ},#{profess})
+    </insert>
+
+    <select id="getTeacherIdByTeacherName" resultType="java.lang.String">
+        select teacher_id from teacher where teacher.tName = #{teacherName}
+    </select>
+    <delete id="removeTeacherByStudentId">
+        delete from teacher where teacher.teacher_id in
+        <foreach collection="list" item="resultItem" open="(" close=")" separator=",">
+            #{resultItem}
+        </foreach>
+    </delete>
+
+    <update id="updateTeacherInfo">
+        update teacher set tName = #{teacherName},Tsex = #{teacherSex},
+        tbirth = to_date(#{teacherBirth},'yyyy/MM/dd'),educ = #{educ},PROFESS = #{profess} where teacher.teacher_id = #{teacherId}
+    </update>
+</mapper>

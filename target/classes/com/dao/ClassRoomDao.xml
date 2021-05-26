@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.ClassRoomDao">
+    <select id="getAllClassRoom" resultType="com.vo.classRoomVo.ClassRoomVo">
+        select CLASSROOM_ID classRoomId,CLASSROOM_NAME classRoomName,DESCRIBe from CLASS_ROOM
+         <if test="classRoomId!=null and classRoomId!=''">
+             where CLASSROOM_ID = #{classRoomId}
+         </if>
+        <if test="classRoomName!=null and classRoomName!=''">
+            where CLASSROOM_NAME = #{classRoomName}
+        </if>
+    </select>
+
+    <select id="getClassRoomId" resultType="java.lang.String">
+        select CLASSROOM_id from CLASS_ROOM where CLASSROOM_Name = #{classRoomName}
+    </select>
+
+    <insert id="addClassRoomInfo">
+        insert into CLASS_ROOM values (null,#{classRoomName},#{describe})
+    </insert>
+
+    <delete id="removeClassRoomInfo">
+        delete from CLASS_ROOM where CLASS_ROOM.CLASSROOM_ID in
+        <foreach collection="list" item="resultItem" open="(" close=")" separator=",">
+            #{resultItem}
+        </foreach>
+    </delete>
+
+    <update id="modifyClassRoomInfo">
+        update CLASS_ROOM set CLASSROOM_NAME = #{classRoomName} ,describe = #{describe} where classRoom_Id = #{classRoomId}
+    </update>
+
+</mapper>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.ClassManagerDao">
+    <select id="getAllClassManagerInfo" resultType="com.vo.classManagerVo.ClassManagerVo">
+
+        select classId,className, majorName, dept.DEPT_NAME deptName, instructor, maxStudents,year
+        from (select class.class_id classId,
+        class.CLASS_NAME className,
+        DEPT.DEPT_NAME majorName,
+        DEPT.PARENT_ID parentId,
+        teacher.TNAME instructor,
+        class.MAXS_TUDENT maxStudents,
+        class.year year
+        from class,
+        dept,
+        teacher
+        where class.MAJOR_ID = DEPT.DEPT_ID
+        and class.INSTRUCTOR = teacher.TEACHER_ID),
+        DEPT
+        where DEPT.DEPT_ID = parentId
+        <if test="deptName!=null and deptName!=''">
+            and dept.DEPT_NAME = #{deptName}
+        </if>
+        <if test="majorName!=null and majorName!=''">
+            and majorName = #{majorName}
+        </if>
+        <if test="year!=null and year!=''">
+            and year = #{year}
+        </if>
+        order  by classId
+    </select>
+
+    <select id="getAbleTeacherNameList" resultType="java.lang.String">
+        select teacher.TName from teacher,dept where DEPT.DEPT_ID = teacher.DEPT_ID and dept.DEPT_NAME = #{deptName} and teacher.TEACHER_ID not in (
+        select class.INSTRUCTOR from class group by class.INSTRUCTOR having count(class.class_id)>=5
+    )
+    </select>
+
+    <select id="getMajorListByYear" resultType="java.lang.String">
+select DEPT_NAME,DEPT_ID from DEPT start with DEPT_NAME = #{deptName} connect by prior DEPT_ID = PARENT_ID and DEPT_ID not in (select MAJOR_ID from class where year = #{year} group by MAJOR_ID,YEAR having count(CLASS_ID)>=10)    </select>
+
+    <select id="getClassNameByClassId" resultType="java.lang.String">
+        select class_Name from CLASS where class.CLASS_ID = #{classId}
+    </select>
+
+    <select id="getMajorIdByName" resultType="java.lang.String">
+        select DEPT_ID from dept where dept.DEPT_NAME = #{deptName}
+    </select>
+
+
+    <insert id="addClassManagerInfo">
+        insert into class values(#{classId},#{className},
+(select dept_id from dept where dept_Name = #{majorName}),#{maxStudents},#{year},(select teacher_id from teacher where tName = #{instructor}))
+    </insert>
+
+    <select id="getClassNumberByMajor" resultType="java.lang.Integer">
+        select count(CLASS_Id)
+        from CLASS
+        where class.MAJOR_ID in
+            (select dept.DEPT_ID
+            from dept
+            start with DEPT.DEPT_NAME = #{majorName}
+            connect by prior DEPT_ID = PARENT_ID) and class.year = #{year}
+    </select>
+
+    <delete id="removeClassNumber">
+        delete from CLASS where class.CLASS_ID in
+        <foreach collection="list" item="resultItem" open="(" close=")" separator=",">
+            #{resultItem}
+        </foreach>
+    </delete>
+
+    <select id="getClassNumbers" resultType="java.lang.Integer">
+        select count(students.student_id) from students,class where STUDENTS.CLASS_ID = class.CLASS_ID and class.year = #{year} and class.CLASS_ID = #{classId}
+    </select>
+
+    <update id="modifyClassManager">
+        update class set class.MAXS_TUDENT = #{maxStudents} ,INSTRUCTOR = (select TEACHER_ID from teacher where TNAME = #{instructor}) where CLASS_ID = #{classId}
+    </update>
+</mapper>

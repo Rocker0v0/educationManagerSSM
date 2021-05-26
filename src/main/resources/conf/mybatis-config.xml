@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+    <!--    设置日志打印-->
+    <settings>
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
+    </settings>
+    <!--    别名（实体类所在的包名）-->
+    <typeAliases>
+        <package name="com.domain"/>
+    </typeAliases>
+
+    <plugins>
+        <plugin interceptor="com.github.pagehelper.PageInterceptor"></plugin>
+    </plugins>
+
+    <mappers>
+        <!--        可一次性加载映射文件-->
+        <package name="com.dao"/>
+        <!--        <mapper resource="com/rocker/dao/RuserDao.xml"/>-->
+    </mappers>
+</configuration>

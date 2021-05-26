@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.DeptMangerDao">
+    <select id="getAllDeptInfoByType" resultType="com.vo.deptManagerVo.DeptManagerVo">
+        select deptId, deptName, a.director, DEPT.DEPT_NAME parentDeptName
+        from (select DEPT_ID deptId, DEPT_NAME deptName, DIRECTOR director, PARENT_ID parentId from dept) a,
+        dept
+        where a.parentId = dept.DEPT_ID and deptId like '08%'
+        <if test="deptId!=null and deptId!=''">
+            and deptId = #{deptId}
+        </if>
+        <if test="parentDeptName!=null and parentDeptName!=''">
+            and DEPT.DEPT_NAME = #{parentDeptName}
+        </if>
+        <if test="deptName!=null and deptName!=''">
+            and deptName = #{deptName}
+        </if>
+        order  by deptId asc
+    </select>
+
+    <select id="getDeptAndMajorName" resultType="java.lang.String">
+        (select DEPT_NAME from DEPT where dept.PARENT_ID = 000 and DEPT_ID like '08%')
+            union (select dept_Name from DEPT where dept.PARENT_ID is null)
+    </select>
+
+    <select id="getMajorNumber" resultType="java.lang.Integer">
+        select count(DEPT_ID) from dept where DEPT.PARENT_ID = (select DEPT_ID from dept where dept.DEPT_NAME = #{deptName}) and DEPT_ID like '08%'
+    </select>
+
+    <insert id="addDeptInfo">
+        insert  into dept values(#{deptId},#{deptName},#{director},(select dept_id from dept where dept.dept_name = #{parentDeptName}))
+    </insert>
+
+    <select id="getDeptNameById" resultType="java.lang.String">
+        select DEPT_NAME from DEPT where DEPT_ID = #{deptId}
+    </select>
+
+    <select id="getParentIdByName" resultType="java.lang.String">
+        select dept_id from DEPT where dept_name = #{deptName}
+    </select>
+
+    <select id="getDeptIdByName" resultType="java.lang.String">
+        select dept_id from DEPT where dept_name = #{deptName}
+    </select>
+
+    <delete id="removeDeptInfo">
+        delete from DEPT where dept.DEPT_ID in
+        <foreach collection="list" item="resultItem" open="(" close=")" separator=",">
+            #{resultItem}
+        </foreach>
+    </delete>
+
+    <update id="modifyDeptInfo">
+        update DEPT set DEPT_NAME = #{deptName} ,director=#{director} where dept_id = #{deptId}
+    </update>
+
+    <select id="getDeptByNameForModify" resultType="java.lang.String">
+        select dept_id from dept where dept_name = #{deptName}
+    </select>
+
+    <select id="getDeptNumber" resultType="java.lang.Integer">
+        select count(DEPT_ID)  from dept where dept.PARENT_ID = 000 and DEPT_ID like '08%'
+    </select>
+</mapper>

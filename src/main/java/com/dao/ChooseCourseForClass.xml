@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.dao.ChooseCourseForClass">
+    <select id="getDeptNameList" resultType="java.lang.String">
+        select DEPT_NAME from DEPT where DEPT.PARENT_ID = 000
+    </select>
+
+    <select id="getDeptNameListForStudent" resultType="java.lang.String">
+        select DEPT_NAME from DEPT where DEPT.PARENT_ID = 000 and DEPT_NAME!='教务处' and DEPT_NAME!='通识教育部' and DEPT_NAME!='导员部'
+    </select>
+
+    <select id="getMajorList" resultType="java.lang.String">
+        select DEPT_NAME from DEPT start with DEPT_NAME = #{DEPTNAME} connect by prior DEPT_ID = PARENT_ID
+    </select>
+
+    <select id="getClassYearList" resultType="java.lang.String">
+        select distinct YEAR from class
+    </select>
+
+    <select id="getClassNameList" resultType="java.lang.String">
+select CLASS_NAME from CLASS where MAJOR_ID = (select DEPT_ID from DEPT where DEPT_NAME = #{majorName}) and YEAR = #{year}
+    </select>
+
+
+
+    <select id="getCourseNameList" resultType="java.lang.String">
+        select distinct CNAME
+        from COURSES,TC
+        where COURSES.COURSE_ID not in (select Tc.COURSE_ID
+        from TC
+        where tc.ID in
+        (select id
+        from sc
+        where sc.STUDENT_ID in
+        (select STUDENT_ID
+        from STUDENTS
+        where CLASS_ID =
+        (select CLASS_ID
+        from CLASS
+        where CLASS_NAME = #{className} and YEAR = #{year}))))
+        and courses.TYPE = #{type}
+        and TC.COURSE_ID = courses.COURSE_ID
+        and DEPT_ID = (select DEPT_ID from DEPT where DEPT_NAME =
+        <if test="type == '专业必修' ">
+            #{majorName}
+        </if>
+        <if test="type == '学院必修'">
+            #{deptName}
+        </if>
+        <if test="type== '公共必修'">
+            '教务处'
+        </if>
+        )
+        and courses.DEPT_ID = (select DEPT_ID from DEPT where DEPT_NAME =
+        <if test="type == '专业必修' ">
+            #{majorName}
+        </if>
+        <if test="type == '学院必修'">
+            #{deptName}
+        </if>
+        <if test="type== '公共必修'">
+            '教务处'
+        </if>)
+        and TC.ID not in (select tc.ID
+        from tc,
+        sc,
+        students,
+        CLASS,
+        courses,
+        dept
+        where tc.COURSE_ID = courses.COURSE_ID
+        and sc.STUDENT_ID = students.STUDENT_ID
+        and students.CLASS_ID = class.CLASS_ID
+        and DEPT.DEPT_ID = COURSES.DEPT_ID
+        and dept.DEPT_ID = (select DEPT_ID from DEPT where DEPT_NAME =
+        <if test="type == '专业必修' ">
+            #{majorName}
+        </if>
+        <if test="type == '学院必修'">
+            #{deptName}
+        </if>
+        <if test="type== '公共必修'">
+            '教务处'
+        </if>)
+        and sc.id = tc.ID
+        and class.YEAR = #{year}
+        and courses.TYPE = #{type}
+        group by tc.ID
+        having count(distinct CLASS.CLASS_ID) = 2)
+    </select>
+
+
+    <select id="getThisClassTcInfo" resultType="java.lang.String">
+select distinct Tc.ISNEW,courses.CNAME
+from sc,
+     COURSES,
+     tc
+where sc.STUDENT_ID in
+      (select STUDENT_ID
+       from STUDENTS
+       where CLASS_ID =
+             (select CLASS_ID from CLASS where CLASS_NAME = #{className} and YEAR = #{year}))
+  and COURSES.COURSE_ID = tc.COURSE_ID
+  and sc.id = tc.ID
+  and courses.TYPE = #{type}
+    </select>
+
+
+    <select id="getAbleChooseIsNews" resultType="java.lang.String">
+        select distinct isNew
+        from tc,
+        courses,
+        dept
+        where tc.SEMESTER != '0'
+        and ISNEW not in (
+        select tc.ISNEW
+        from tc,
+        sc,
+        students,
+        CLASS,
+        courses,
+        dept
+        where tc.COURSE_ID = courses.COURSE_ID
+        and sc.STUDENT_ID = students.STUDENT_ID
+        and students.CLASS_ID = class.CLASS_ID
+        and DEPT.DEPT_ID = COURSES.DEPT_ID
+        and dept.DEPT_ID = (select DEPT_ID from DEPT where DEPT_NAME =
+        <if test="type == '专业必修' ">
+            #{majorName}
+        </if>
+        <if test="type == '学院必修'">
+            #{deptName}
+        </if>
+        <if test="type== '公共必修'">
+            '教务处'
+        </if>
+        )
+        and sc.id = tc.ID
+        and class.YEAR = #{year}
+        and courses.TYPE = #{type}
+        group by tc.ISNEW
+        having count(distinct CLASS.CLASS_ID) = 2
+        )
+        and tc.COURSE_ID = courses.COURSE_ID
+        and DEPT.DEPT_ID = courses.DEPT_ID
+        and dept.DEPT_NAME =
+        <if test="type == '专业必修' ">
+            #{majorName}
+        </if>
+        <if test="type == '学院必修'">
+            #{deptName}
+        </if>
+        <if test="type== '公共必修'">
+            '教务处'
+        </if>
+        and COURSES.TYPE = #{type}
+    </select>
+
+
+    <select id="getTcId" resultType="java.lang.String">
+select tc.id
+from tc,
+     COURSES
+where TC.COURSE_ID = COURSES.COURSE_ID
+  and courses.CNAME = #{cName}
+  and TC.ISNEW = #{isNew}
+    </select>
+
+
+    <select id="getStudentsIdList" resultType="java.lang.String">
+select STUDENT_ID from students where CLASS_ID  = (select CLASS_ID from class where CLASS_NAME = #{className} and year = #{year})
+    </select>
+
+    <insert id="insertScInfo">
+        insert into sc(student_id, grade, id,PARIMARYID)  values (#{STUDENTID},null,#{id},null)
+    </insert>
+
+
+    <select id="getChooseCourseAllList" resultType="com.vo.chooseCourseVo.ChooseCourseAllInfo">
+        select className,
+        courseName,
+        year,
+        isNew,
+        teacherName,
+        majorName,
+        startWeek,
+        endWeek,
+        day,
+        classOne,
+        classTwo,
+        id,
+        dept.DEPT_NAME deptName
+        from (select CLASS.CLASS_NAME className,
+        class.year year,
+        tc.ISNEW isNew,
+        courses.CNAME courseName,
+        teacher.TNAME teacherName,
+        DEPT.DEPT_NAME majorName,
+        dept.DEPT_ID deptID,
+        TC.START_WEEK startWeek,
+        Tc.END_WEEK endWeek,
+        TC.DAY day,
+        tc.CLASS_ONE classOne,
+        tc.CLASS_TWO classTwo,
+        tc.id id
+        from STUDENTS,
+        TC,
+        sc,
+        CLASS,
+        COURSES,
+        TEACHER,
+        dept
+        where students.STUDENT_ID = sc.STUDENT_ID
+        and sc.id = TC.ID
+        and students.CLASS_ID = class.CLASS_ID
+        and tc.COURSE_ID = courses.COURSE_ID
+        and tc.TEACHER_ID = teacher.TEACHER_ID
+        and courses.type !='通识选修'
+        and class.MAJOR_ID = DEPT.DEPT_ID),
+        DEPT
+        where DEPT.DEPT_ID in (select dept.PARENT_ID deptName
+        from DEPT
+        where DEPT.DEPT_ID = deptID)
+        <if test="year!=null and year!=''">
+            and year = #{year}
+        </if>
+
+        <if test="courseName!=null and courseName!=''">
+            and courseName = #{courseName}
+        </if>
+        <if test="teacherName!=null and teacherName!=''">
+            and teacherName = #{teacherName}
+        </if>
+        <if test="className!=null and className!=''">
+            and className = #{className}
+        </if>
+        group by className, courseName, isNew, teacherName, year, majorName, startWeek, endWeek, day, classOne,
+        classTwo,id, dept.DEPT_NAME
+
+    </select>
+
+    <delete id="removeChooseCourseForClass">
+        delete from sc where id = #{id} and sc.STUDENT_ID in
+     (select STUDENTS.student_id from STUDENTS,class
+     where students.CLASS_ID = class.CLASS_ID and class.YEAR = #{year}
+       and class.CLASS_NAME = #{className})
+    </delete>
+</mapper>

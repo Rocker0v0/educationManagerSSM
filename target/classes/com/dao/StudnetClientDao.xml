@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.StudentManagerDao">
+    <select id="getAllStudentCourseList" resultType="com.vo.teacherClientVo.TeacherClientVo">
+        select  COURSES.CNAME courseName,teacher.TNAME teacherName,Tc.SEMESTER semester,
+       tc.START_WEEK startWeek,tc.END_WEEK endWeek,tc.DAY day,tc.CLASS_ONE classOne,tc.CLASS_TWO classTwo,CLASS_ROOM.CLASSROOM_NAME classRoomName from tC,courses,CLASS_ROOM,sc,teacher where tc.COURSE_ID =courses.COURSE_ID and tc.CLASSROOM_ID = CLASS_ROOM.CLASSROOM_ID and sc.id = tc.ID and tc.TEACHER_ID =teacher.TEACHER_ID
+        and sc.STUDENT_ID = #{studentId} and SEMESTER  = #{semester}
+    </select>
+</mapper>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.GradeManagerDao">
+    <select id="getGradeManagerAllInfo" resultType="com.vo.gradeManagerVo.GradeManagerAllInfo">
+        select class.year year,sc.STUDENT_ID studentId,students.SNAME studentName,courses.TYPE type,COURSES.CNAME
+        courseName,
+        teacher.TNAME teacherName,sc.GRADE grade,class.CLASS_NAME className,sc.PARIMARYID primaryId
+        from sc,students,class ,tc,TEACHER,COURSES
+        where students.STUDENT_ID = sc.STUDENT_ID and class.CLASS_ID = STUDENTS.CLASS_ID
+        and sc.id = tc.id and teacher.TEACHER_ID = tc.TEACHER_ID and tc.COURSE_ID = courses.COURSE_ID
+        <if test="year!=null and year!=''">
+            and class.year = #{year}
+        </if>
+
+        <if test="courseName!=null and courseName!=''">
+            and courses.cName = #{courseName}
+        </if>
+        <if test="className!=null and className!=''">
+            and class.class_name = #{className}
+        </if>
+        <if test="studentId!=null and studentId!=''">
+            and students.student_id = #{studentId}
+        </if>
+        <if test="teacherId!=null and teacherId!=''">
+            and TEACHER.teacher_id = #{teacherId}
+        </if>
+    </select>
+
+    <select id="getAllReadChooseCourseName" resultType="java.lang.String">
+        select distinct courses.CNAME courseName from sc,tc,COURSES,class,students where sc.ID = tc.ID and tc.COURSE_ID =
+        courses.COURSE_ID and class.class_id = students.class_id and sc.student_id = students.student_id
+        <if test="teacherId!=null and teacherId!=''">
+            and Tc.TEACHER_ID = #{teacherId}
+        </if>
+        <if test="year!=null and year!=''">
+            and class.year = #{year}
+        </if>
+    </select>
+
+    <select id="getAllReadChooseClassName" resultType="java.lang.String">
+        select distinct class.CLASS_NAME className from sc,students,class,tc,courses
+        where class.CLASS_ID = STUDENTS.CLASS_ID and students.STUDENT_ID = sc.STUDENT_ID
+        and sc.id = tc.id and tc.COURSE_ID = courses.COURSE_ID
+        <if test="year!=null and year!=''">and CLASS.YEAR = #{year}</if>
+        <if test="courseName!=null and courseName!=''">and courses.CNAME = #{courseName}</if>
+        <if test="teacherId!=null and teacherId!=''">
+            and TC.TEACHER_ID = #{teacherId}
+        </if>
+    </select>
+
+    <delete id="removeScInfoByPrimaryIds">
+        delete from sc where PARIMARYID in
+        <foreach collection="list" item="resultItem" open="(" close=")" separator=",">
+            #{resultItem}
+        </foreach>
+    </delete>
+
+    <update id="modifyScInfoByPrimaryIds">
+        update sc set grade = #{grade} where sc.PARIMARYID = #{primaryId}
+    </update>
+</mapper>

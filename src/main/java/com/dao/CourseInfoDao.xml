@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.CourseInfoDao">
+    <select id="getAllCourseInfo" resultType="com.vo.courseInfoVo.CourseInfoVo">
+        select courses.COURSE_ID courseId,COURSES.CNAME courseName,courses.CREDITS credits,
+
+       courses.TYPE type ,DEPT.DEPT_NAME deptName
+
+       from courses,dept where courses.DEPT_ID = dept.DEPT_ID
+
+       <if test="deptName!=null and deptName!=''">
+           and DEPT.DEPT_NAME = #{deptName}
+       </if>
+        <if test="courseName!=null and courseName!=''">
+            and courses.CNAME = #{courseName}
+        </if>
+        <if test="type!=null and type!=''">
+            and courses.TYPE = #{type}
+        </if>
+    </select>
+
+    <select id="getDeptNameForCoursesInfo" resultType="java.lang.String">
+        <if test="type == '专业必修'">
+            select DEPT_NAME from DEPT where PARENT_ID like '08%'
+        </if>
+        <if test="type=='学院必修'">
+            select DEPT_NAME from DEPT where DEPT_ID like '08%' and PARENT_ID = 000
+        </if>
+        <if test="type== '通识选修'">
+            select DEPT_NAME from DEPT where DEPT_ID = '071'
+        </if>
+        <if test="type== '公共必修'">
+            select DEPT_NAME from DEPT where DEPT_ID = '070'
+        </if>
+    </select>
+
+    <select id="getCourseIdByName" resultType="java.lang.String">
+        select COURSE_ID from courses where CNAME = #{courseName}
+    </select>
+
+    <insert id="addCourseInfo">
+        insert  into  COURSES values(null,#{courseName},#{credits},#{type},1,(select DEPT_ID from dept where DEPT_NAME = #{deptName}))
+    </insert>
+
+    <update id="modifyCourseInfo">
+        update COURSES set CNAME = #{courseName},credits = #{credits} where course_id = #{courseId}
+    </update>
+
+    <delete id="removeCourseInfo" >
+        delete from COURSES where COURSE_ID in
+        <foreach collection="list" item="resultItem" open="(" close=")" separator=",">
+            #{resultItem}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.LoginDao">
+    <select id="getStuUser" resultType="com.daomain.StuUser">
+        select SUser,SPass from stu_user where SUser = #{SUser} and SPass = #{SPass}
+    </select>
+    <select id="getSysUser" resultType="com.daomain.SysUser">
+        select USERNAME,USERPWD from sys_user where USERNAME = #{USERNAME} and USERPWD = #{USERPWD}
+    </select>
+
+    <select id="getTeaUser" resultType="com.daomain.TeaUser">
+        select TUSER,TPASS from tea_user where TUSER = #{TUSER} and TPASS = #{TPASS}
+    </select>
+
+    <select id="getName" resultType="java.util.HashMap">
+        select SNAME from STUDENTS where STUDENT_ID = #{STUDENT_ID}
+    </select>
+
+    <select id="getTeaName" resultType="java.util.HashMap">
+        select TNAME from TEACHER where TEACHER_ID = #{TEACHER_ID}
+    </select>
+</mapper>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/aop
+        https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--加载properties配置文件-->
+    <context:property-placeholder location="classpath:conf/JDBC.properties"></context:property-placeholder>
+    <!--固定写法：连接池-->
+
+    <bean id="myDataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+        <property name="url" value="${URL}"></property>
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+        <property name="maxActive" value="20"></property>
+    </bean>
+
+    <!--    固定写法：声明mybatis中提供的SqlSessionFactoryBean类，这个类内部创建SqlSessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="myDataSource"></property>
+        <property name="configLocation" value="classpath:conf/mybatis-config.xml"></property>
+    </bean>
+
+    <!--  固定写法：创建dao对象，使用SqlSessionFactory的getMapper(dao.class)
+            MapperScannerConfigurer:在内部调用getMapper()生成每个dao接口的代理文件
+  -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+<!--               指定SqlSessionFactory的Id-->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+<!--        指定包名，报名是dao接口所在的包名，-->
+<!--            mapperScanConfigurer会自动扫描包中的所有接口，把每个接口都执行一次getMapper()方法，得到每个接口的dao对象-->
+<!--            创建好的dao对象放到spring容器中-->
+<!--            创建好的dao对象默认是到接口的首字母小写-->
+        <property name="basePackage" value="com.dao"></property>
+    </bean>
+<!--    扫描service包-->
+    <context:component-scan base-package="com.service"/>
+
+
+    <!--    1 声明事务处理器-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="myDataSource"></property>
+    </bean>
+    <!--    2 声明业务的事务属性-->
+    <tx:advice id="myAdvice" transaction-manager="transactionManager">
+        <!--       tx:attributes:配置事务属性 -->
+        <tx:attributes>
+            <!--isolation:隔离级别
+                propagation:传播行为
+                rollback-for:指定回滚的异常名的全限定名称-->
+            <!--<tx:method:给具体方法配置事务属性-->
+            <tx:method name="buy" isolation="DEFAULT" propagation="REQUIRED"
+                       rollback-for="java.lang.NullPointerException"/>
+            <!--配置带通配符方法的事务-->
+            <tx:method name="add*" propagation="REQUIRES_NEW"
+                       rollback-for="java.lang.NullPointerException"/>
+            <tx:method name="modify*"  propagation="REQUIRED"
+                       rollback-for="java.lang.NullPointerException"/>
+            <tx:method name="remove*"  propagation="REQUIRED"
+                       rollback-for="java.lang.NullPointerException"/>
+            <tx:method name="query*"  propagation="SUPPORTS" read-only="true"
+                       rollback-for="java.lang.NullPointerException"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!--    配置AOP-->
+    <aop:config>
+        <!--        配置切入点表达式-->
+        <!--        ..*:编号是一下所有的包和子包-->
+        <!--        一级包不用使用通配符-->
+        <aop:pointcut id="servicePt" expression="execution(* com.service..*.*(..))"/>
+        <!--       配置增强器:关联advice和pointcut -->
+        <aop:advisor advice-ref="myAdvice" pointcut-ref="servicePt"/>
+    </aop:config>
+</beans>

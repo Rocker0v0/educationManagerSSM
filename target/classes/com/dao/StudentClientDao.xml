@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dao.StudentClientDao">
+    <select id="getAllStudentCourseList" resultType="com.vo.teacherClientVo.TeacherClientVo">
+        select COURSES.CNAME courseName,teacher.TNAME teacherName,Tc.SEMESTER semester,
+        tc.START_WEEK startWeek,tc.END_WEEK endWeek,tc.DAY day,tc.CLASS_ONE classOne,tc.CLASS_TWO
+        classTwo,CLASS_ROOM.CLASSROOM_NAME classRoomName from tC,courses,CLASS_ROOM,sc,teacher where tc.COURSE_ID
+        =courses.COURSE_ID and tc.CLASSROOM_ID = CLASS_ROOM.CLASSROOM_ID and sc.id = tc.ID and tc.TEACHER_ID
+        =teacher.TEACHER_ID
+        and sc.STUDENT_ID = #{studentId} and SEMESTER = #{semester}
+        <if test="semester == 0">
+            and sc.grade is null
+        </if>
+    </select>
+
+    <select id="getAllStudentGradeList" resultType="com.vo.studentClientVo.StudentClientVo">
+        select courses.CNAME courseName,teacher.TNAME teacherName,courses.TYPE type,courses.CREDITS credits, sc.GRADE
+        grade from sc,courses,tc,teacher
+        where sc.id = tc.id and tc.COURSE_ID = courses.COURSE_ID and tc.TEACHER_ID = teacher.TEACHER_ID
+        <if test="studentId!=null and studentId!=''">
+            and sc.STUDENT_ID = #{studentId}
+        </if>
+        <if test="courseName!=null and courseName!=''">
+            and courses.CNAME = #{courseName}
+        </if>
+        <if test="semester!=null and semester!=''">
+            and tc.SEMESTER = #{semester}
+        </if>
+        <if test="teacherName!=null and teacherName!=''">
+            and teacher.TNAME = #{teacherName}
+        </if>
+    </select>
+
+    <select id="getAllMyCourseList" resultType="com.vo.studentClientVo.MyCourseStudentClientVo">
+        select courses.CNAME courseName,teacher.TNAME teacherName ,Tc.START_WEEK startWeek,
+        TC.END_WEEK endWeek,Tc.DAY day,Tc.CLASS_ONE classOne,TC.CLASS_TWO classTwo,
+        CLASS_ROOM.CLASSROOM_NAME classRoomName,Tc.id id
+
+        from TC,courses,TEACHER,CLASS_ROOM where CLASS_ROOM.CLASSROOM_ID = TC.CLASSROOM_ID and TC.COURSE_ID =
+        courses.COURSE_ID and Tc.TEACHER_ID = teacher.TEACHER_ID and courses.TYPE = '通识选修'
+        and TC.id not in (select Tc.id from sc,TC where sc.ID = tc.ID and sc.STUDENT_ID = #{studentId})
+        <if test="teacherName!=null and teacherName!=''">
+            and teacher.TNAME = #{teacherName}
+        </if>
+        <if test="courseName!=null and courseName!=''">
+            and courses.CNAME = #{courseName}
+        </if>
+    </select>
+
+    <select id="getThisTimeCourseManager" resultType="java.lang.String">
+        select Tc.id from sc,TC,courses where sc.ID = tc.ID and sc.STUDENT_ID =#{studentId} and TC.COURSE_ID = courses.COURSE_ID
+            and courses.TYPE = '通识选修'
+            and (
+            (TC.START_WEEK &gt;= #{startWeek} and TC.START_WEEK &lt;= #{endWeek})
+            or (TC.END_WEEK &gt;= #{startWeek} and TC.END_WEEK &lt;= #{endWeek})
+            or (TC.START_WEEK &lt;= #{startWeek} and TC.END_WEEK &gt;= #{endWeek})
+            )
+            and TC.CLASS_ONE = #{classOne}
+            and sc.grade is null
+    </select>
+
+    <insert id="AddChooseCourse">
+        insert into sc values(#{studentId},null,#{id},null)
+    </insert>
+
+    <select id="getAllAlReadingCourse" resultType="com.vo.studentClientVo.MyCourseStudentClientVo">
+        select courses.CNAME courseName,teacher.TNAME teacherName ,Tc.START_WEEK startWeek,
+        TC.END_WEEK endWeek,Tc.DAY day,Tc.CLASS_ONE classOne,TC.CLASS_TWO classTwo,
+        CLASS_ROOM.CLASSROOM_NAME classRoomName,Tc.id id,Tc.semester semester,sc.PARIMARYID primaryId,courses.type type
+        from TC,courses,TEACHER,CLASS_ROOM,sc
+        where CLASS_ROOM.CLASSROOM_ID = TC.CLASSROOM_ID
+        and TC.COURSE_ID = courses.COURSE_ID
+        and Tc.TEACHER_ID = teacher.TEACHER_ID
+        and Tc.id = sc.ID
+        and sc.STUDENT_ID = #{studentId}
+        <if test="courseName!=null and courseName!=''">
+            and courses.CNAME = #{courseName}
+        </if>
+        <if test="teacherName!=null and teacherName!=''">
+            and teacher.TNAME=#{teacherName}
+        </if>
+        <if test="semester!=null and semester!=''">
+            and Tc.semester=#{semester}
+        </if>
+    </select>
+
+    <delete id="removeMyChooseCoursesList">
+        delete from sc where sc.student_id = #{studentId} and sc.parimaryId = #{primaryId}
+    </delete>
+
+    <select id="getGrade" resultType="java.lang.String">
+        select grade from sc where sc.id = #{id} and sc.student_id = #{studentId}
+    </select>
+</mapper>
